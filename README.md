@@ -28,8 +28,6 @@ ensure screenshot-basic # Always ensure this is started before scloud-sdk
 ensure scloud-sdk
 ```
 
-When using this method, the client only needs to pass the bucket name (e.g., `"avatars"`), and the server will automatically resolve the correct key from memory. **Never pass API keys from the client.**
-
 ---
 
 ## 🛠️ API Reference
@@ -40,37 +38,82 @@ When using this method, the client only needs to pass the bucket name (e.g., `"a
 Captures a screenshot of the client and uploads it.
 
 *   **`options` (table)**:
-    *   `bucket` (string, **required**): Bucket name (must match a name in `SCLOUD_BUCKETS`).
+    *   `bucket` (string, **required**): Bucket name.
+    *   `path` (string, optional): Remote directory path (e.g., `"avatars/"`).
+    *   `name` (string, optional): Custom filename.
+*   **Returns**: `table` containing `{ url = string }` on success, or `nil` on failure.
+
+---
+
+### Server-Side Exports (Synchronous)
+
+#### `takeServerScreenshot(playerSource, options)`
+Triggers a client screenshot remotely and uploads it.
+
+*   **`playerSource` (number)**: Target player ID.
+*   **`options` (table)**:
+    *   `bucket` (string, **required**): Bucket name.
+    *   `path` (string, optional): Remote directory path.
+    *   `name` (string, optional): Custom filename.
+    *   `timeout` (number, optional): Request timeout in ms (default: `10000`).
+*   **Returns**: `table` containing `{ url = string }` on success, or `nil` on failure.
+
+#### `requestPresignedUrl(options)`
+Generates a temporary, secure upload URL.
+
+*   **`options` (table)**:
+    *   `bucket` (string, **required**): Bucket name.
+    *   `path` (string, optional): Remote file path.
+*   **Returns**: `string` (the URL) on success, or `nil` on failure.
+
+#### `uploadImage(buffer, options)`
+Uploads a binary buffer directly from the server.
+
+*   **`options` (table)**:
+    *   `bucket` (string, **required**): Bucket name.
     *   `path` (string, optional): Remote directory path.
     *   `name` (string, optional): Custom filename.
 *   **Returns**: `table` containing `{ url = string }` on success, or `nil` on failure.
 
 ---
 
-### Server-Side Exports
+## 💡 Examples
 
-#### `requestPresignedUrl(path, options)`
-Generates a temporary, secure upload URL.
+### Taking a Screenshot (Client)
+```lua
+local upload = exports["scloud-sdk"]:takeScreenshot({
+    bucket = "avatars",
+    path = "users/"
+})
 
-*   **`path` (string)**: The remote path.
-*   **`options` (table, optional)**: `{ bucket, apiKey }`.
-*   **Returns**: `string` (the URL) on success, or `nil` on failure.
+if upload then
+    print("Uploaded to: " .. upload.url)
+end
+```
 
-#### `takeServerScreenshot(playerSource, path, options, timeout)`
-Triggers a client screenshot remotely.
+### Requesting Presigned URL (Server)
+```lua
+local request = exports["scloud-sdk"]:requestPresignedUrl({
+    bucket = "mugs",
+    path = "temporary/upload.png"
+})
 
-*   **`playerSource` (number)**: Player ID.
-*   **`path` (string)**: Remote path.
-*   **`options` (table, optional)**: Same as client-side `options`.
-*   **Returns**: `table` containing `{ url = string }` on success, or `nil` on failure.
+if request then
+    print("Presigned URL: " .. request.url)
+end
+```
 
-#### `uploadImage(buffer, path, options)`
-Uploads a binary buffer directly from the server.
+### Server-Side Screenshot (Admin)
+```lua
+local upload = exports["scloud-sdk"]:takeServerScreenshot(targetId, {
+    bucket = "mugs",
+    path = "evidence/"
+})
 
-*   **`buffer` (bytes/string)**: The file data.
-*   **`path` (string)**: The remote path.
-*   **`options` (table, optional)**: Same as client-side `options`.
-*   **Returns**: `table` containing `{ url = string }` on success, or `nil` on failure.
+if upload then
+    print("Uploaded to: " .. upload.url)
+end
+```
 
 ---
 

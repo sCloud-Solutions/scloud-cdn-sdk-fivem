@@ -54,7 +54,7 @@ const UploadResponseSchema = v.object({
 export async function requestPresignedUrl(path: string, options?: SCloudConfig): Promise<string> {
     const { bucket, apiKey } = resolveConfig(options);
     const cleanPath = path.startsWith('/') ? path.substring(1) : path;
-    const url = `${CDN_BASE_URL}/${bucket}/${cleanPath}?presigned=true`;
+    const url = `${CDN_BASE_URL}/api/presigned-url?bucketName=${bucket}&path=${cleanPath}`;
 
     const res = await fetch(url, {
         method: 'GET',

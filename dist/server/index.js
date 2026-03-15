@@ -13621,7 +13621,7 @@ var UploadResponseSchema = object({
 async function requestPresignedUrl(path, options) {
   const { bucket, apiKey } = resolveConfig(options);
   const cleanPath = path.startsWith("/") ? path.substring(1) : path;
-  const url = `${CDN_BASE_URL}/${bucket}/${cleanPath}?presigned=true`;
+  const url = `${CDN_BASE_URL}/api/presigned-url?bucketName=${bucket}&path=${cleanPath}`;
   const res = await (0, import_cross_fetch.default)(url, {
     method: "GET",
     headers: {
@@ -13722,9 +13722,9 @@ onNet("scloud:takeScreenshot", async (id, path, options) => {
     emitNet("scloud:takeScreenshotResponse", src, id, { success: false, error: msg });
   }
 });
-exports("__takeServerScreenshot", (playerSrc, pathOverride, options, timeoutOverride, cb) => {
-  const path = options.path || pathOverride || "";
-  const timeout = timeoutOverride || 1e4;
+exports("__takeServerScreenshot", (playerSrc, options, cb) => {
+  const path = options.path || "";
+  const timeout = options.timeout || 1e4;
   requestClientScreenshot(playerSrc, path, options, timeout).then((url) => {
     if (cb)
       cb({ url });
@@ -13733,18 +13733,18 @@ exports("__takeServerScreenshot", (playerSrc, pathOverride, options, timeoutOver
       cb(null);
   });
 });
-exports("__requestPresignedUrl", (pathOverride, options, cb) => {
-  const path = options.path || pathOverride || "";
+exports("__requestPresignedUrl", (options, cb) => {
+  const path = options.path || "";
   requestPresignedUrl(path, options).then((url) => {
     if (cb)
-      cb(url);
+      cb({ url });
   }).catch(() => {
     if (cb)
       cb(null);
   });
 });
-exports("__uploadImage", (buffer, pathOverride, options, cb) => {
-  const path = options.path || pathOverride || "";
+exports("__uploadImage", (buffer, options, cb) => {
+  const path = options.path || "";
   uploadImage(buffer, path, options).then((url) => {
     if (cb)
       cb({ url });

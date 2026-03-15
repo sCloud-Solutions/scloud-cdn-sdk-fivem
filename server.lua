@@ -1,27 +1,30 @@
-exports('takeServerScreenshot', function(playerSrc, path, options, timeout)
+exports('takeServerScreenshot', function(playerSrc, options)
     local p = promise.new()
+    local opt = options or {}
 
-    exports['scloud-sdk']:__takeServerScreenshot(playerSrc, path, options or {}, timeout or 10000, function(result)
+    exports['scloud-sdk']:__takeServerScreenshot(playerSrc, opt, function(result)
         p:resolve(result)
     end)
 
     return Citizen.Await(p)
 end)
 
-exports('requestPresignedUrl', function(path, options)
+exports('requestPresignedUrl', function(options)
     local p = promise.new()
+    local opt = options or {}
 
-    exports['scloud-sdk']:__requestPresignedUrl(path, options or {}, function(url)
-        p:resolve(url)
+    exports['scloud-sdk']:__requestPresignedUrl(opt, function(result)
+        p:resolve(result)
     end)
 
     return Citizen.Await(p)
 end)
 
-exports('uploadImage', function(buffer, path, options)
+exports('uploadImage', function(buffer, options)
     local p = promise.new()
+    local opt = options or {}
 
-    exports['scloud-sdk']:__uploadImage(buffer, path, options or {}, function(result)
+    exports['scloud-sdk']:__uploadImage(buffer, opt, function(result)
         p:resolve(result)
     end)
 

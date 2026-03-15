@@ -29,26 +29,27 @@ onNet('scloud:takeScreenshot', async (id: number, path: string, options?: SCloud
 interface LuaOptions extends SCloudConfig {
     path?: string;
     name?: string;
+    timeout?: number;
 }
 
-exports('__takeServerScreenshot', (playerSrc: string | number, pathOverride: string, options: LuaOptions, timeoutOverride: number, cb: Function) => {
-    const path = options.path || pathOverride || "";
-    const timeout = timeoutOverride || 10000;
+exports('__takeServerScreenshot', (playerSrc: string | number, options: LuaOptions, cb: Function) => {
+    const path = options.path || "";
+    const timeout = options.timeout || 10000;
 
     requestClientScreenshot(playerSrc, path, options, timeout)
         .then(url => { if (cb) cb({ url }); })
         .catch(() => { if (cb) cb(null); });
 });
 
-exports('__requestPresignedUrl', (pathOverride: string, options: LuaOptions, cb: Function) => {
-    const path = options.path || pathOverride || "";
+exports('__requestPresignedUrl', (options: LuaOptions, cb: Function) => {
+    const path = options.path || "";
     requestPresignedUrl(path, options)
-        .then(url => { if (cb) cb(url); })
+        .then(url => { if (cb) cb({ url }); })
         .catch(() => { if (cb) cb(null); });
 });
 
-exports('__uploadImage', (buffer: Buffer, pathOverride: string, options: LuaOptions, cb: Function) => {
-    const path = options.path || pathOverride || "";
+exports('__uploadImage', (buffer: Buffer, options: LuaOptions, cb: Function) => {
+    const path = options.path || "";
     uploadImage(buffer, path, options)
         .then(url => { if (cb) cb({ url }); })
         .catch(() => { if (cb) cb(null); });
