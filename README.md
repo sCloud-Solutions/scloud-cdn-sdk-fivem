@@ -23,7 +23,7 @@ set SCLOUD_DEFAULT_BUCKET "your-bucket-name"
 set SCLOUD_DEFAULT_API_KEY "your-api-key"
 
 ensure screenshot-basic
-ensure scloud-cdn-sdk-fivem
+ensure scloud-sdk
 ```
 
 ---
@@ -76,7 +76,7 @@ Uploads a binary buffer directly from the server.
 
 ### Taking a Screenshot (Client)
 ```lua
-local upload = exports["scloud-cdn-sdk-fivem"]:takeScreenshot({
+local upload = exports["scloud-sdk"]:takeScreenshot({
     path = "user_screenshots/",
     name = "my_awesome_photo.png"
 })
@@ -92,7 +92,7 @@ end
 ```lua
 RegisterCommand("report_proof", function(source, args)
     local targetId = tonumber(args[1])
-    local upload = exports["scloud-cdn-sdk-fivem"]:takeServerScreenshot(targetId, "admin_proofs/")
+    local upload = exports["scloud-sdk"]:takeServerScreenshot(targetId, "admin_proofs/")
     
     if upload then
         print("Proof captured for admin review: " .. upload.url)
@@ -103,7 +103,7 @@ end, true)
 ### Direct Buffer Upload (Server)
 ```lua
 local myData = "..." -- Binary image data
-local upload = exports["scloud-cdn-sdk-fivem"]:uploadImage(myData, "logs/icons/", {
+local upload = exports["scloud-sdk"]:uploadImage(myData, "logs/icons/", {
     name = "status_icon.png"
 })
 ```
