@@ -1,0 +1,33 @@
+{
+  "name": "scloud-cdn-sdk-fivem",
+  "version": "1.0.0",
+  "description": "FiveM SDK for sCloud CDN",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sCloud-Solutions/scloud-cdn-sdk-fivem.git"
+  },
+  "keywords": [],
+  "author": "0xSacul",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sCloud-Solutions/scloud-cdn-sdk-fivem/issues"
+  },
+  "homepage": "https://github.com/sCloud-Solutions/scloud-cdn-sdk-fivem#readme",
+  "devDependencies": {
+    "@citizenfx/client": "^2.0.26198-1",
+    "@citizenfx/server": "^2.0.26389-1",
+    "@types/node": "^16.18.126",
+    "tsup": "^6.7.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "cross-fetch": "^4.1.0",
+    "form-data": "^4.0.5",
+    "valibot": "^1.2.0"
+  }
+}
