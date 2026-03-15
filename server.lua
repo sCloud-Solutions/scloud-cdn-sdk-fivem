@@ -1,7 +1,7 @@
 exports('takeServerScreenshot', function(playerSrc, path, options, timeout)
     local p = promise.new()
 
-    exports['scloud-cdn-sdk-fivem']:__takeServerScreenshot(playerSrc, path, options or {}, timeout or 10000, function(result)
+    exports['scloud-sdk']:__takeServerScreenshot(playerSrc, path, options or {}, timeout or 10000, function(result)
         p:resolve(result)
     end)
 
@@ -11,7 +11,7 @@ end)
 exports('requestPresignedUrl', function(path, options)
     local p = promise.new()
 
-    exports['scloud-cdn-sdk-fivem']:__requestPresignedUrl(path, options or {}, function(url)
+    exports['scloud-sdk']:__requestPresignedUrl(path, options or {}, function(url)
         p:resolve(url)
     end)
 
@@ -21,7 +21,7 @@ end)
 exports('uploadImage', function(buffer, path, options)
     local p = promise.new()
 
-    exports['scloud-cdn-sdk-fivem']:__uploadImage(buffer, path, options or {}, function(result)
+    exports['scloud-sdk']:__uploadImage(buffer, path, options or {}, function(result)
         p:resolve(result)
     end)
 
