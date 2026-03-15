@@ -1,6 +1,6 @@
+import * as v from 'valibot';
 import fetch from 'cross-fetch';
 import FormData from 'form-data';
-import * as v from 'valibot';
 
 const CDN_BASE_URL = 'https://cdn.sacul.cloud';
 
@@ -10,62 +10,77 @@ export interface SCloudConfig {
     name?: string;
 }
 
-function resolveConfig(options?: SCloudConfig) {
-    const bucket = options?.bucket || GetConvar('SCLOUD_DEFAULT_BUCKET', '');
-    const apiKey = options?.apiKey || GetConvar('SCLOUD_DEFAULT_API_KEY', '');
+function getKeysFromConvar(): Map<string, string> {
+    const registry = new Map<string, string>();
+    const rawValue = GetConvar('SCLOUD_BUCKETS', '');
 
-    if (!bucket) throw new Error('sCloud configuration error: Missing bucket name. Provide one in options or set SCLOUD_DEFAULT_BUCKET convar.');
-    if (!apiKey) throw new Error('sCloud configuration error: Missing API Key. Provide one in options or set SCLOUD_DEFAULT_API_KEY convar.');
+    if (!rawValue || rawValue === '') return registry;
+
+    const pairs = rawValue.split(',');
+    for (const pair of pairs) {
+        const [name, key] = pair.split(':');
+        if (name && key) {
+            registry.set(name.trim(), key.trim());
+        }
+    }
+
+    return registry;
+}
+
+function resolveConfig(options?: SCloudConfig) {
+    const bucket = options?.bucket || "";
+    let apiKey = options?.apiKey || "";
+
+    if (bucket && !apiKey) {
+        const registry = getKeysFromConvar();
+        const foundKey = registry.get(bucket);
+        if (foundKey) {
+            apiKey = foundKey;
+        }
+    }
+
+    if (!bucket) throw new Error('sCloud configuration error: Missing bucket name. Provide one in options.');
+    if (!apiKey) throw new Error(`sCloud configuration error: No API Key found for bucket "${bucket}". Ensure SCLOUD_BUCKETS convar is set correctly on the server.`);
 
     return { bucket, apiKey };
 }
 
-const PresignedResponseSchema = v.object({
+const UploadResponseSchema = v.object({
     success: v.boolean(),
-    url: v.string(),
-    expiresIn: v.optional(v.number())
+    url: v.optional(v.string()),
+    error: v.optional(v.string()),
 });
 
 export async function requestPresignedUrl(path: string, options?: SCloudConfig): Promise<string> {
-    const { apiKey } = resolveConfig(options);
+    const { bucket, apiKey } = resolveConfig(options);
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    const url = `${CDN_BASE_URL}/${bucket}/${cleanPath}?presigned=true`;
 
-    const url = new URL(`${CDN_BASE_URL}/api/presigned-url`);
-    url.searchParams.append('path', path);
-    url.searchParams.append('randomizeName', 'true');
-
-    const res = await fetch(url.toString(), {
+    const res = await fetch(url, {
         method: 'GET',
         headers: {
-            'Authorization': `Bearer ${apiKey}`
-        }
+            'x-api-key': apiKey,
+        },
     });
 
     if (!res.ok) {
-        throw new Error(`sCloud API Error (${res.status}): Failed to request presigned URL.`);
+        throw new Error(`sCloud API Error: ${res.status} ${res.statusText}`);
     }
 
-    const json = await res.json();
-    const parsed = v.parse(PresignedResponseSchema, json);
+    const data = await res.json();
+    const result = v.parse(UploadResponseSchema, data);
 
-    if (!parsed.success || !parsed.url) {
-        throw new Error('sCloud API Error: Presigned URL request returned an unsuccessful state.');
+    if (!result.success || !result.url) {
+        throw new Error(result.error || 'Failed to get presigned URL');
     }
 
-    return parsed.url;
+    return result.url;
 }
 
-const UploadResponseSchema = v.object({
-    success: v.boolean(),
-    message: v.optional(v.string()),
-    url: v.optional(v.string()),
-    urls: v.optional(v.array(v.string()))
-});
-
-export async function uploadImage(buffer: Buffer, path: string, options?: SCloudConfig): Promise<string> {
+export async function uploadImage(buffer: Buffer, path: string, options?: SCloudConfig): Promise<{ url: string }> {
     const { bucket, apiKey } = resolveConfig(options);
 
     const form = new FormData();
-
     const cleanPath = path.startsWith('/') ? path.substring(1) : path;
     const fileName = options?.name || 'upload.png';
     const useRandom = !options?.name;
@@ -75,23 +90,23 @@ export async function uploadImage(buffer: Buffer, path: string, options?: SCloud
 
     const res = await fetch(uploadUrl, {
         method: 'POST',
-        body: form as any,
         headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            ...form.getHeaders()
-        }
+            ...form.getHeaders(),
+            'x-api-key': apiKey,
+        },
+        body: form as any,
     });
 
     if (!res.ok) {
-        throw new Error(`sCloud API Error (${res.status}): Failed to upload image directly.`);
+        throw new Error(`sCloud API Error: ${res.status} ${res.statusText}`);
     }
 
-    const json = await res.json();
-    const parsed = v.parse(UploadResponseSchema, json);
+    const data = await res.json();
+    const result = v.parse(UploadResponseSchema, data);
 
-    if (!parsed.success || !parsed.url) {
-        throw new Error('sCloud API Error: Upload was reported unsuccessful by the server or missing url in response.');
+    if (!result.success || !result.url) {
+        throw new Error(result.error || 'Failed to upload image');
     }
 
-    return parsed.url;
+    return { url: result.url };
 }

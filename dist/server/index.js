@@ -617,13 +617,13 @@ var require_url_state_machine = __commonJS({
               return failure;
             }
             while (isASCIIDigit(input[pointer])) {
-              const number2 = parseInt(at(input, pointer));
+              const number = parseInt(at(input, pointer));
               if (ipv4Piece === null) {
-                ipv4Piece = number2;
+                ipv4Piece = number;
               } else if (ipv4Piece === 0) {
                 return failure;
               } else {
-                ipv4Piece = ipv4Piece * 10 + number2;
+                ipv4Piece = ipv4Piece * 10 + number;
               }
               if (ipv4Piece > 255) {
                 return failure;
@@ -12294,11 +12294,11 @@ var require_sign = __commonJS({
   "node_modules/math-intrinsics/sign.js"(exports2, module2) {
     "use strict";
     var $isNaN = require_isNaN();
-    module2.exports = function sign(number2) {
-      if ($isNaN(number2) || number2 === 0) {
-        return number2;
+    module2.exports = function sign(number) {
+      if ($isNaN(number) || number === 0) {
+        return number;
       }
-      return number2 < 0 ? -1 : 1;
+      return number < 0 ? -1 : 1;
     };
   }
 });
@@ -12878,8 +12878,8 @@ var require_get_intrinsic = __commonJS({
         throw new $SyntaxError("invalid intrinsic syntax, expected opening `%`");
       }
       var result = [];
-      $replace(string2, rePropName, function(match, number2, quote, subString) {
-        result[result.length] = quote ? $replace(subString, reEscapeChar, "$1") : number2 || match;
+      $replace(string2, rePropName, function(match, number, quote, subString) {
+        result[result.length] = quote ? $replace(subString, reEscapeChar, "$1") : number || match;
       });
       return result;
     };
@@ -13345,10 +13345,6 @@ var require_form_data = __commonJS({
   }
 });
 
-// src/server/api.ts
-var import_cross_fetch = __toESM(require_node_ponyfill());
-var import_form_data = __toESM(require_form_data());
-
 // node_modules/valibot/dist/index.mjs
 var store$4;
 function getGlobalConfig(config$1) {
@@ -13439,59 +13435,6 @@ function getFallback(schema, dataset, config$1) {
 function getDefault(schema, dataset, config$1) {
   return typeof schema.default === "function" ? schema.default(dataset, config$1) : schema.default;
 }
-function array(item, message$1) {
-  return {
-    kind: "schema",
-    type: "array",
-    reference: array,
-    expects: "Array",
-    async: false,
-    item,
-    message: message$1,
-    get "~standard"() {
-      return /* @__PURE__ */ _getStandardProps(this);
-    },
-    "~run"(dataset, config$1) {
-      var _a;
-      const input = dataset.value;
-      if (Array.isArray(input)) {
-        dataset.typed = true;
-        dataset.value = [];
-        for (let key = 0; key < input.length; key++) {
-          const value$1 = input[key];
-          const itemDataset = this.item["~run"]({ value: value$1 }, config$1);
-          if (itemDataset.issues) {
-            const pathItem = {
-              type: "array",
-              origin: "value",
-              input,
-              key,
-              value: value$1
-            };
-            for (const issue of itemDataset.issues) {
-              if (issue.path)
-                issue.path.unshift(pathItem);
-              else
-                issue.path = [pathItem];
-              (_a = dataset.issues) == null ? void 0 : _a.push(issue);
-            }
-            if (!dataset.issues)
-              dataset.issues = itemDataset.issues;
-            if (config$1.abortEarly) {
-              dataset.typed = false;
-              break;
-            }
-          }
-          if (!itemDataset.typed)
-            dataset.typed = false;
-          dataset.value.push(itemDataset.value);
-        }
-      } else
-        _addIssue(this, "type", dataset, config$1);
-      return dataset;
-    }
-  };
-}
 function boolean(message$1) {
   return {
     kind: "schema",
@@ -13505,26 +13448,6 @@ function boolean(message$1) {
     },
     "~run"(dataset, config$1) {
       if (typeof dataset.value === "boolean")
-        dataset.typed = true;
-      else
-        _addIssue(this, "type", dataset, config$1);
-      return dataset;
-    }
-  };
-}
-function number(message$1) {
-  return {
-    kind: "schema",
-    type: "number",
-    reference: number,
-    expects: "number",
-    async: false,
-    message: message$1,
-    get "~standard"() {
-      return /* @__PURE__ */ _getStandardProps(this);
-    },
-    "~run"(dataset, config$1) {
-      if (typeof dataset.value === "number" && !isNaN(dataset.value))
         dataset.typed = true;
       else
         _addIssue(this, "type", dataset, config$1);
@@ -13657,48 +13580,64 @@ function parse(schema, input, config$1) {
 }
 
 // src/server/api.ts
+var import_cross_fetch = __toESM(require_node_ponyfill());
+var import_form_data = __toESM(require_form_data());
 var CDN_BASE_URL = "https://cdn.sacul.cloud";
-function resolveConfig(options) {
-  const bucket = (options == null ? void 0 : options.bucket) || GetConvar("SCLOUD_DEFAULT_BUCKET", "");
-  const apiKey = (options == null ? void 0 : options.apiKey) || GetConvar("SCLOUD_DEFAULT_API_KEY", "");
-  if (!bucket)
-    throw new Error("sCloud configuration error: Missing bucket name. Provide one in options or set SCLOUD_DEFAULT_BUCKET convar.");
-  if (!apiKey)
-    throw new Error("sCloud configuration error: Missing API Key. Provide one in options or set SCLOUD_DEFAULT_API_KEY convar.");
-  return { bucket, apiKey };
-}
-var PresignedResponseSchema = object({
-  success: boolean(),
-  url: string(),
-  expiresIn: optional(number())
-});
-async function requestPresignedUrl(path, options) {
-  const { apiKey } = resolveConfig(options);
-  const url = new URL(`${CDN_BASE_URL}/api/presigned-url`);
-  url.searchParams.append("path", path);
-  url.searchParams.append("randomizeName", "true");
-  const res = await (0, import_cross_fetch.default)(url.toString(), {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`
+function getKeysFromConvar() {
+  const registry = /* @__PURE__ */ new Map();
+  const rawValue = GetConvar("SCLOUD_BUCKETS", "");
+  if (!rawValue || rawValue === "")
+    return registry;
+  const pairs = rawValue.split(",");
+  for (const pair of pairs) {
+    const [name, key] = pair.split(":");
+    if (name && key) {
+      registry.set(name.trim(), key.trim());
     }
-  });
-  if (!res.ok) {
-    throw new Error(`sCloud API Error (${res.status}): Failed to request presigned URL.`);
   }
-  const json = await res.json();
-  const parsed = parse(PresignedResponseSchema, json);
-  if (!parsed.success || !parsed.url) {
-    throw new Error("sCloud API Error: Presigned URL request returned an unsuccessful state.");
+  return registry;
+}
+function resolveConfig(options) {
+  const bucket = (options == null ? void 0 : options.bucket) || "";
+  let apiKey = (options == null ? void 0 : options.apiKey) || "";
+  if (bucket && !apiKey) {
+    const registry = getKeysFromConvar();
+    const foundKey = registry.get(bucket);
+    if (foundKey) {
+      apiKey = foundKey;
+    }
   }
-  return parsed.url;
+  if (!bucket)
+    throw new Error("sCloud configuration error: Missing bucket name. Provide one in options.");
+  if (!apiKey)
+    throw new Error(`sCloud configuration error: No API Key found for bucket "${bucket}". Ensure SCLOUD_BUCKETS convar is set correctly on the server.`);
+  return { bucket, apiKey };
 }
 var UploadResponseSchema = object({
   success: boolean(),
-  message: optional(string()),
   url: optional(string()),
-  urls: optional(array(string()))
+  error: optional(string())
 });
+async function requestPresignedUrl(path, options) {
+  const { bucket, apiKey } = resolveConfig(options);
+  const cleanPath = path.startsWith("/") ? path.substring(1) : path;
+  const url = `${CDN_BASE_URL}/${bucket}/${cleanPath}?presigned=true`;
+  const res = await (0, import_cross_fetch.default)(url, {
+    method: "GET",
+    headers: {
+      "x-api-key": apiKey
+    }
+  });
+  if (!res.ok) {
+    throw new Error(`sCloud API Error: ${res.status} ${res.statusText}`);
+  }
+  const data = await res.json();
+  const result = parse(UploadResponseSchema, data);
+  if (!result.success || !result.url) {
+    throw new Error(result.error || "Failed to get presigned URL");
+  }
+  return result.url;
+}
 async function uploadImage(buffer, path, options) {
   const { bucket, apiKey } = resolveConfig(options);
   const form = new import_form_data.default();
@@ -13709,21 +13648,21 @@ async function uploadImage(buffer, path, options) {
   form.append("files", buffer, fileName);
   const res = await (0, import_cross_fetch.default)(uploadUrl, {
     method: "POST",
-    body: form,
     headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      ...form.getHeaders()
-    }
+      ...form.getHeaders(),
+      "x-api-key": apiKey
+    },
+    body: form
   });
   if (!res.ok) {
-    throw new Error(`sCloud API Error (${res.status}): Failed to upload image directly.`);
+    throw new Error(`sCloud API Error: ${res.status} ${res.statusText}`);
   }
-  const json = await res.json();
-  const parsed = parse(UploadResponseSchema, json);
-  if (!parsed.success || !parsed.url) {
-    throw new Error("sCloud API Error: Upload was reported unsuccessful by the server or missing url in response.");
+  const data = await res.json();
+  const result = parse(UploadResponseSchema, data);
+  if (!result.success || !result.url) {
+    throw new Error(result.error || "Failed to upload image");
   }
-  return parsed.url;
+  return { url: result.url };
 }
 
 // src/server/screenshot.ts
@@ -13762,12 +13701,13 @@ async function requestClientScreenshot(playerSrc, path, options, timeoutMs = 1e4
 
 // src/server/index.ts
 setImmediate(() => {
-  const defaultBucket = GetConvar("scloud_default_bucket", "");
-  const defaultApiKey = GetConvar("scloud_default_api_key", "");
-  if (defaultBucket && defaultApiKey) {
-    console.log(`^2[sCloud SDK]^0 Successfully initialized for bucket: ^3${defaultBucket}^0`);
+  console.log(`^2[sCloud SDK]^0 Resource starting (Mode: Exclusive Convar)...`);
+  const bucketsRaw = GetConvar("SCLOUD_BUCKETS", "");
+  if (!bucketsRaw || bucketsRaw === "") {
+    console.log(`^3[sCloud SDK]^0 Warning: SCLOUD_BUCKETS convar is not set! Set it in your server.cfg like: set SCLOUD_BUCKETS "name:key"`);
   } else {
-    console.log(`^3[sCloud SDK]^0 Warning: scloud_default_bucket or scloud_default_api_key convars are missing. You must provide them per-request.`);
+    const count = bucketsRaw.split(",").length;
+    console.log(`^2[sCloud SDK]^0 Successfully detected ^3${count}^0 registered buckets.`);
   }
 });
 onNet("scloud:takeScreenshot", async (id, path, options) => {

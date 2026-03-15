@@ -2,13 +2,14 @@ import { requestClientScreenshot } from './screenshot';
 import { requestPresignedUrl, uploadImage, SCloudConfig } from './api';
 
 setImmediate(() => {
-    const defaultBucket = GetConvar('SCLOUD_DEFAULT_BUCKET', '');
-    const defaultApiKey = GetConvar('SCLOUD_DEFAULT_API_KEY', '');
+    console.log(`^2[sCloud SDK]^0 Resource starting (Mode: Exclusive Convar)...`);
 
-    if (defaultBucket && defaultApiKey) {
-        console.log(`^2[sCloud SDK]^0 Successfully initialized for bucket: ^3${defaultBucket}^0`);
+    const bucketsRaw = GetConvar('SCLOUD_BUCKETS', '');
+    if (!bucketsRaw || bucketsRaw === '') {
+        console.log(`^3[sCloud SDK]^0 Warning: SCLOUD_BUCKETS convar is not set! Set it in your server.cfg like: set SCLOUD_BUCKETS "name:key"`);
     } else {
-        console.log(`^3[sCloud SDK]^0 Warning: SCLOUD_DEFAULT_BUCKET or SCLOUD_DEFAULT_API_KEY convars are missing. You must provide them per-request.`);
+        const count = bucketsRaw.split(',').length;
+        console.log(`^2[sCloud SDK]^0 Successfully detected ^3${count}^0 registered buckets.`);
     }
 });
 

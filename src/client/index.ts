@@ -20,7 +20,6 @@ export function __takeScreenshot(options: SCloudOptions, cb: (result: any) => vo
     const path = options.path || "";
     const rpcOptions = {
         bucket: options.bucket,
-        apiKey: options.apiKey,
         name: options.name
     };
 
